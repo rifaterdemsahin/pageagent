@@ -1,0 +1,16 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Node (if you add tooling later)
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Build / env
+dist/
+.env
+.env.local

@@ -356,9 +356,24 @@
   function stripQuotes(x) { return x.replace(/^["'“”]|["'“”]$/g, '').trim(); }
 
   async function planWithLLM(cmd) {
-    if (!config.llm || !config.llm.apiKey) return null;
+    if (!config.llm) return null;
     try {
       const snap = snapshot();
+      // Proxy mode (recommended for production): a backend holds the API key
+      // and the browser only POSTs { command, elements } to it. See server.js.
+      if (config.llm.proxy) {
+        const r = await fetch(config.llm.proxy, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command: cmd, elements: snap }),
+        });
+        if (!r.ok) throw new Error('proxy HTTP ' + r.status);
+        const data = await r.json();
+        const steps = data.steps || data;
+        if (!Array.isArray(steps) || !steps.length) return null;
+        return steps.map((st) => ({ ...st, target: resolveLLMTarget(st, snap) }));
+      }
+      if (!config.llm.apiKey) return null;
       const sys = (config.llm.systemPrompt ||
         'You are PageAgent, an on-page AI agent. Given a user command and a JSON list of interactive elements ({id,label,tag}), ' +
         'return a JSON array of steps. Each step is one of: ' +

@@ -1,0 +1,14 @@
+{
+  "name": "pageagent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PageAgent — an AI agent that lives inside your webpage. Static demo + server-side DeepSeek planning proxy.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

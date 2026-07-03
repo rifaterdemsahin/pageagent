@@ -323,8 +323,12 @@ PageAgent.<span class="k">on</span>(<span class="s">'done'</span>, e =&gt; done(
 <script src="pageagent.js" crossorigin="true"></script>
 <script>
   // Demo tuning: make the agent pop open so first-time visitors see it
+  // Production: the DeepSeek key lives server-side as a fly secret.
+  // The agent POSTs { command, elements } to /api/plan (see server.js)
+  // instead of ever holding the key in the browser.
   PageAgent.config({
     accent: '#6366f1',
+    llm: { proxy: '/api/plan' },
     suggestions: ['Create a customer named Ada Lovelace with email ada@acme.io', 'Open settings then turn on two-factor', 'Scroll to bottom', 'Go to dashboard']
   });
   setTimeout(() => PageAgent.open(), 1200);

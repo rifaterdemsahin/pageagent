@@ -12,6 +12,20 @@
 
 ---
 
+## 🌐 Live demo
+
+| | URL |
+|---|---|
+| **App — fly.io** | <https://pageagent-demo.fly.dev/> |
+| **GitHub Pages** | <https://rifaterdemsahin.github.io/pageagent/> *(→ redirects to fly.io)* |
+
+The deployed agent is wired to a **server-side DeepSeek** planner (`POST /api/plan`). The DeepSeek
+key lives in an **Azure Key Vault → injected as a fly secret → read from `process.env`** on the
+server → **never exposed to the browser**. Try: *"create a customer named Ada Lovelace with email
+ada@acme.io"*.
+
+---
+
 ## 🚀 Install (one line)
 
 ```html
@@ -25,7 +39,12 @@ That's it. Your app now has an AI agent — a floating copilot orb appears in th
 ```bash
 git clone https://github.com/rifaterdemsahin/pageagent.git
 cd pageagent
-python3 -m http.server 8000   # then open http://localhost:8000
+
+# option A — static only (built-in local planner, no key needed)
+python3 -m http.server 8000          # open http://localhost:8000
+
+# option B — full stack with server-side DeepSeek (matches the live deploy)
+DEEPSEEK_API_KEY=sk-... npm start     # node server.js on :8080
 ```
 
 Open `index.html` for a live, interactive demo (a mock CRM the agent drives in real time).
@@ -88,6 +107,14 @@ Compound commands are split on `then`, `,`, `and`, `next`, newlines.
 
 ## 🔌 Bring your own LLM
 
+**Recommended for production — server-side proxy** (the key never reaches the browser; this is what
+the live deploy on fly.io uses):
+
+```js
+PageAgent.config({ llm: { proxy: '/api/plan' } });   // POST {command, elements} → {steps}
+```
+
+**Or connect a provider directly in the browser** (development only — the key is visible to users).
 Click the ⚙️ in the panel, or configure in code:
 
 ```js
@@ -142,13 +169,37 @@ Add a `data-pa` attribute to make any element trivially targetable:
 
 ---
 
+## ☁️ Deployment
+
+The same repo is published two ways:
+
+- **fly.io (canonical).** `Dockerfile` builds `server.js` (Node 20 Alpine) which serves the static
+  site **and** the `/api/plan` DeepSeek proxy. `fly.toml` defines the app (`pageagent-demo`), a
+  `/api/health` check, and auto-stop/start. The DeepSeek key is injected once as a fly secret.
+- **GitHub Pages (mirror → redirect).** `.github/workflows/static.yml` publishes `index.html`. A
+  host-detecting snippet at the very top of `<head>` runs
+  `location.replace('https://pageagent-demo.fly.dev/'+location.hash)` **only** when `hostname`
+  contains `github.io`, so `…/pageagent/#dashboard` lands on `…/#dashboard` at fly. It is a no-op
+  on fly itself and on localhost.
+
+```bash
+flyctl deploy --app pageagent-demo
+flyctl secrets set --app pageagent-demo DEEPSEEK_API_KEY=sk-...
+```
+
+Full reasoning: see [`formula.md`](./formula.md). Open items: see [`TODO.md`](./TODO.md).
+
+---
+
 ## 📦 What's in this repo
 
 ```
-index.html      ← interactive demo (mock CRM) + landing page
+index.html      ← landing page + interactive mock-CRM demo (the page the agent controls)
 pageagent.js    ← the agent library (the "one line")
-README.md
-LICENSE
+server.js       ← zero-dep Node server: static hosting + POST /api/plan (DeepSeek, key from env)
+package.json · Dockerfile · fly.toml · .dockerignore      ← fly.io deployment
+.github/workflows/static.yml                              ← GitHub Pages publish
+README.md · formula.md · TODO.md · LICENSE
 ```
 
 ---
